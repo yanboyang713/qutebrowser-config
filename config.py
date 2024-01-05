@@ -2,7 +2,13 @@
 #   qute://help/configuring.html
 #   qute://help/settings.html
 
+import os
+from os.path import join, dirname
 from time import localtime, strftime
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), ".env")
+load_dotenv(dotenv_path)
 
 # Reassign to avoid lsp(ruff_lsp) errors
 config = config  # noqa: F821
@@ -11,33 +17,43 @@ c = c  # noqa: F821
 config.load_autoconfig()
 
 # Variables
-leader = " "
-ss_dir = "~/Pictures/Captures/"
+leader = os.environ.get("LEADER_KEY")
+ss_dir = os.environ.get("SCREENSHORT_DIR")
+dl_dir = os.environ.get("DOWNLOAD_DIR")
+terminal = os.environ.get("TERMINAL")
+editor = os.environ.get("EDITOR")
+username = os.environ.get("GITHUB_USERNAME")
+homepage = os.environ.get("HOMEPAGE")
 timestamp = strftime("%Y-%m-%d-%H-%M-%S", localtime())  # updates on every config-source
-terminal = "foot"
-editor = "nvim"
-username = "asapdotid"
-homepage = "https://duckduckgo.com/"
 
 # General
 c.editor.command = [terminal, "-e", editor, "{}"]
-c.downloads.location.directory = "~/Downloads"
+c.downloads.location.directory = dl_dir
 c.zoom.default = "100%"
 c.tabs.show = "switching"
 c.statusbar.show = "in-mode"
 c.auto_save.session = True
 c.url.auto_search = "naive"
+c.completion.height = "33%"
+c.downloads.position = "bottom"
+c.input.insert_mode.auto_load = True
+c.spellcheck.languages = ["en-US"]
+c.confirm_quit = ["always"]
+
+# Tabs
+c.tabs.favicons.scale = 1.0
+c.tabs.background = True
 
 # User agent
 config.set(
     "content.headers.user_agent",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.3 Firefox/121",
     "*",
 )
 
 # Dark mode
-config.set("colors.webpage.darkmode.enabled", True)
-config.set("colors.webpage.preferred_color_scheme", "dark")
+config.set("colors.webpage.darkmode.enabled", False)
+config.set("colors.webpage.preferred_color_scheme", "auto")
 
 # File handling
 config.set("fileselect.handler", "external")
@@ -60,6 +76,7 @@ config.source("themes/manjaro-dark.py")
 font_size = "11pt"
 font_family = "FiraCode Nerd Font"
 font = font_size + " " + font_family
+# Set fonts
 c.fonts.default_size = font_size
 c.fonts.default_family = font_family
 c.fonts.completion.entry = font
@@ -68,9 +85,14 @@ c.fonts.debug_console = font
 c.fonts.prompts = font
 c.fonts.statusbar = font
 
+# Content
+c.content.pdfjs = True
+c.content.autoplay = False
+
 # Home page
-c.url.default_page = homepage
+c.url.open_base_url = True
 c.url.start_pages = homepage
+c.url.default_page = homepage
 
 # Search engines
 c.url.searchengines = {
@@ -158,3 +180,17 @@ config.bind(leader + "W", "tab-give")
 config.bind(leader + "y", "hint links yank")
 config.bind(leader + "x", "quit --save")
 config.bind(leader + "X", "window-only")
+
+config.bind("p", "tab-pin")
+config.bind(";w", "hint link spawn --detach mpv --force-window yes {hint-url}")
+config.bind(";W", "spawn --detach mpv --force-window yes {url}")
+config.bind(
+    ";I",
+    "hint images spawn --output-message wget -P " + dl_dir + "images/ -c {hint-url}",
+)
+
+# Password management
+config.bind("ee", "spawn --userscript qute-pass")
+config.bind("eu", "spawn --userscript qute-pass --username-only")
+config.bind("ep", "spawn --userscript qute-pass --password-only")
+config.bind("eo", "spawn --userscript qute-pass --otp-only")

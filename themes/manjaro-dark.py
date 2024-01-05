@@ -25,26 +25,6 @@ bg_accent = "#006a6a"
 # SETTINGS #
 ############
 
-# Height (in pixels or as percentage of the window) of the completion.
-# Type: PercOrInt
-c.completion.height = "33%"
-
-# Where to show the downloaded files.
-# Type: VerticalPosition
-# Valid values:
-#   - top
-#   - bottom
-c.downloads.position = "bottom"
-
-# Scaling factor for favicons in the tab bar. The tab size is unchanged,
-# so big favicons also require extra `tabs.padding`.
-# Type: Float
-c.tabs.favicons.scale = 1.0
-
-# Padding (in pixels) around text for tabs.
-# Type: Padding
-c.tabs.padding = {"bottom": 2, "left": 5, "right": 5, "top": 2}
-
 # Text color of the completion widget. May be a single color to use for
 # all columns or a list of three colors, one for each column.
 c.colors.completion.fg = fg_default
