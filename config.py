@@ -25,6 +25,10 @@ editor = os.environ.get("EDITOR")
 username = os.environ.get("GITHUB_USERNAME")
 homepage = os.environ.get("HOMEPAGE")
 timestamp = strftime("%Y-%m-%d-%H-%M-%S", localtime())  # updates on every config-source
+# Font variables
+font_size = os.environ.get("FONT_SIZE") + "pt"
+font_family = os.environ.get("FONT_FAMILY")
+font = font_size + " " + font_family
 
 # General
 c.editor.command = [terminal, "-e", editor, "{}"]
@@ -72,10 +76,6 @@ config.set("content.blocking.method", "both")
 # Theme
 config.source("themes/manjaro-dark.py")
 
-# Font
-font_size = "11pt"
-font_family = "FiraCode Nerd Font"
-font = font_size + " " + font_family
 # Set fonts
 c.fonts.default_size = font_size
 c.fonts.default_family = font_family
@@ -144,6 +144,7 @@ config.bind("Q", "tab-close")
 config.bind("<Ctrl-=>", "zoom-in")
 config.bind("<Ctrl-->", "zoom-out")
 
+config.bind(leader + "A", "open -t https://github.com/" + username + "/")
 config.bind(leader + "b", "config-cycle statusbar.show always in-mode")
 config.bind(leader + "B", "config-cycle tabs.show multiple switching")
 config.bind(leader + "c", "config-edit")
@@ -153,7 +154,6 @@ config.bind(leader + "D", "devtools-focus")
 config.bind(leader + "e", "edit-text")
 config.bind(leader + "E", "cmd-edit")
 config.bind(leader + "i", "hint inputs")
-config.bind(leader + "I", "open -t https://github.com/2kabhishek/qute2k")
 config.bind(leader + "h", "history")
 config.bind(leader + "H", "help")
 config.bind(leader + "m", "bookmark-list")
@@ -174,7 +174,7 @@ config.bind(leader + "t", "cmd-set-text -s :tab-select")
 config.bind(leader + "T", "tab-only")
 config.bind(leader + "u", "undo")
 config.bind(leader + "v", "hint links spawn mpv {hint-url}")
-config.bind(leader + "V", "hint links spawn " + terminal + "-e youtube-dl {hint-url}")
+config.bind(leader + "V", "hint links spawn " + terminal + "-e yt-dlp {hint-url}")
 config.bind(leader + "w", "cmd-set-text -s :tab-take")
 config.bind(leader + "W", "tab-give")
 config.bind(leader + "y", "hint links yank")
