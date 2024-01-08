@@ -27,9 +27,9 @@ ln -s $PWD/qutebrowser-config ~/.config/qutebrowser
 Instruction configuration:
 
 -   cd to Qutebrowser project
--   Setup environment: `make ini`
--   Reload config: <space> + r
--   Reload window: <space> + R
+-   Setup environment: `make ini` and update or using default value on `.env`
+-   Reload config: `<space> + r`
+-   Reload window: `<space> + R`
 
 ## Support
 
