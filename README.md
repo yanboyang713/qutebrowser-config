@@ -30,6 +30,7 @@ Instruction configuration:
 -   Setup environment: `make ini` and update or using default value on `.env`
 -   Reload config: `<space> + r`
 -   Reload window: `<space> + R`
+-   If config not reload properly, please restart Qutebrowser `(close and open)` app
 
 ## Support
 
