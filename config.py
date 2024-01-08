@@ -25,6 +25,8 @@ editor = os.environ.get("EDITOR")
 username = os.environ.get("GITHUB_USERNAME")
 homepage = os.environ.get("HOMEPAGE")
 timestamp = strftime("%Y-%m-%d-%H-%M-%S", localtime())  # updates on every config-source
+canvas = os.environ.get("CANVAS")
+webgl = os.environ.get("WEBGL")
 # Font variables
 font_size = os.environ.get("FONT_SIZE") + "pt"
 font_family = os.environ.get("FONT_FAMILY")
@@ -88,6 +90,8 @@ c.fonts.statusbar = font
 # Content
 c.content.pdfjs = True
 c.content.autoplay = False
+c.content.canvas_reading = True
+c.content.webgl = True
 
 # Home page
 c.url.open_base_url = True
@@ -117,6 +121,7 @@ c.url.searchengines = {
     "wk": "https://en.wikipedia.org/wiki/{}",
     "yt": "https://youtube.com/results?search_query={}",
     "ytm": "https://music.youtube.com/search?q={}",
+    "wa": "https://wiki.archlinux.org/?search={}",
 }
 
 # Aliases
