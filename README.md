@@ -24,10 +24,12 @@ Link project to user config `~/.config/qutebrowser`:
 ln -s $PWD/qutebrowser-config ~/.config/qutebrowser
 ```
 
-Update config shortcut:
+Instruction configuration:
 
--   Reload config <space> + r
--   Reload window <space> + R
+-   cd to Qutebrowser project
+-   Setup environment: `make ini`
+-   Reload config: <space> + r
+-   Reload window: <space> + R
 
 ## Support
 
