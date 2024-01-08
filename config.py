@@ -2,13 +2,10 @@
 #   qute://help/configuring.html
 #   qute://help/settings.html
 
-import os
-from os.path import join, dirname
-from time import localtime, strftime
-from dotenv import load_dotenv
+from config.variable import Variable
 
-dotenv_path = join(dirname(__file__), ".env")
-load_dotenv(dotenv_path)
+# Load autoconfig
+var = Variable()
 
 # Reassign to avoid lsp(ruff_lsp) errors
 config = config  # noqa: F821
@@ -16,25 +13,9 @@ c = c  # noqa: F821
 
 config.load_autoconfig()
 
-# Variables
-leader = os.environ.get("LEADER_KEY")
-ss_dir = os.environ.get("SCREENSHORT_DIR")
-dl_dir = os.environ.get("DOWNLOAD_DIR")
-terminal = os.environ.get("TERMINAL")
-editor = os.environ.get("EDITOR")
-username = os.environ.get("GITHUB_USERNAME")
-homepage = os.environ.get("HOMEPAGE")
-timestamp = strftime("%Y-%m-%d-%H-%M-%S", localtime())  # updates on every config-source
-canvas = os.environ.get("CANVAS")
-webgl = os.environ.get("WEBGL")
-# Font variables
-font_size = os.environ.get("FONT_SIZE") + "pt"
-font_family = os.environ.get("FONT_FAMILY")
-font = font_size + " " + font_family
-
 # General
-c.editor.command = [terminal, "-e", editor, "{}"]
-c.downloads.location.directory = dl_dir
+c.editor.command = [getattr(var, "terminal"), "-e", getattr(var, "editor"), "{}"]
+c.downloads.location.directory = getattr(var, "dl_dir")
 c.zoom.default = "100%"
 c.tabs.show = "switching"
 c.statusbar.show = "in-mode"
@@ -58,17 +39,18 @@ config.set(
 )
 
 # Dark mode
-config.set("colors.webpage.darkmode.enabled", False)
+config.set("colors.webpage.darkmode.enabled", getattr(var, "darkmode"))
 config.set("colors.webpage.preferred_color_scheme", "auto")
 
 # File handling
 config.set("fileselect.handler", "external")
 config.set(
-    "fileselect.single_file.command", [terminal, "-e", "ranger", "--choosefile", "{}"]
+    "fileselect.single_file.command",
+    [getattr(var, "terminal"), "-e", "ranger", "--choosefile", "{}"],
 )
 config.set(
     "fileselect.multiple_files.command",
-    [terminal, "-e", "ranger", "--choosefiles", "{}"],
+    [getattr(var, "terminal"), "-e", "ranger", "--choosefiles", "{}"],
 )
 
 # Enable Brave browser adblocker
@@ -79,24 +61,24 @@ config.set("content.blocking.method", "both")
 config.source("themes/manjaro-dark.py")
 
 # Set fonts
-c.fonts.default_size = font_size
-c.fonts.default_family = font_family
-c.fonts.completion.entry = font
-c.fonts.hints = font
-c.fonts.debug_console = font
-c.fonts.prompts = font
-c.fonts.statusbar = font
+c.fonts.default_size = getattr(var, "font_size")
+c.fonts.default_family = getattr(var, "font_family")
+c.fonts.completion.entry = getattr(var, "font")
+c.fonts.hints = getattr(var, "font")
+c.fonts.debug_console = getattr(var, "font")
+c.fonts.prompts = getattr(var, "font")
+c.fonts.statusbar = getattr(var, "font")
 
 # Content
 c.content.pdfjs = True
 c.content.autoplay = False
-c.content.canvas_reading = True
-c.content.webgl = True
+c.content.canvas_reading = getattr(var, "canvas")
+c.content.webgl = getattr(var, "webgl")
 
 # Home page
 c.url.open_base_url = True
-c.url.start_pages = homepage
-c.url.default_page = homepage
+c.url.start_pages = getattr(var, "homepage")
+c.url.default_page = getattr(var, "homepage")
 
 # Search engines
 c.url.searchengines = {
@@ -108,7 +90,7 @@ c.url.searchengines = {
     "gh": "https://github.com/search?q={}",
     "gg": "https://google.com/search?q={}",
     "gho": "https://github.com/{}",
-    "ghr": "https://github.com/" + username + "/{}",
+    "ghr": "https://github.com/" + getattr(var, "username") + "/{}",
     "jr": "https://springhealth.atlassian.net/browse/{}",
     "mp": "https://google.com/maps?q={}",
     "rd": "https://reddit.com/search/?q={}",
@@ -149,49 +131,64 @@ config.bind("Q", "tab-close")
 config.bind("<Ctrl-=>", "zoom-in")
 config.bind("<Ctrl-->", "zoom-out")
 
-config.bind(leader + "A", "open -t https://github.com/" + username + "/")
-config.bind(leader + "b", "config-cycle statusbar.show always in-mode")
-config.bind(leader + "B", "config-cycle tabs.show multiple switching")
-config.bind(leader + "c", "config-edit")
-config.bind(leader + "C", "cmd-set-text -s :set -t")
-config.bind(leader + "d", "devtools")
-config.bind(leader + "D", "devtools-focus")
-config.bind(leader + "e", "edit-text")
-config.bind(leader + "E", "cmd-edit")
-config.bind(leader + "i", "hint inputs")
-config.bind(leader + "h", "history")
-config.bind(leader + "H", "help")
-config.bind(leader + "m", "bookmark-list")
-config.bind(leader + "M", "bookmark-add")
-config.bind(leader + "n", "tab-clone")
-config.bind(leader + "N", "tab-clone -w")
-config.bind(leader + "o", "hint links window")
-config.bind(leader + "O", "hint links run :open -p {hint-url}")
-config.bind(leader + "p", "tab-pin")
-config.bind(leader + "P", "cmd-set-text -s :tab-move")
-config.bind(leader + "q", "tab-close")
-config.bind(leader + "Q", "close")
-config.bind(leader + "r", "config-source")
-config.bind(leader + "R", "restart")
-config.bind(leader + "s", "screenshot " + ss_dir + "qute-" + timestamp + ".png")
-config.bind(leader + "S", "view-source --edit")
-config.bind(leader + "t", "cmd-set-text -s :tab-select")
-config.bind(leader + "T", "tab-only")
-config.bind(leader + "u", "undo")
-config.bind(leader + "v", "hint links spawn mpv {hint-url}")
-config.bind(leader + "V", "hint links spawn " + terminal + "-e yt-dlp {hint-url}")
-config.bind(leader + "w", "cmd-set-text -s :tab-take")
-config.bind(leader + "W", "tab-give")
-config.bind(leader + "y", "hint links yank")
-config.bind(leader + "x", "quit --save")
-config.bind(leader + "X", "window-only")
+config.bind(
+    getattr(var, "leader") + "A",
+    "open -t https://github.com/" + getattr(var, "username") + "/",
+)
+config.bind(getattr(var, "leader") + "b", "config-cycle statusbar.show always in-mode")
+config.bind(getattr(var, "leader") + "B", "config-cycle tabs.show multiple switching")
+config.bind(getattr(var, "leader") + "c", "config-edit")
+config.bind(getattr(var, "leader") + "C", "cmd-set-text -s :set -t")
+config.bind(getattr(var, "leader") + "d", "devtools")
+config.bind(getattr(var, "leader") + "D", "devtools-focus")
+config.bind(getattr(var, "leader") + "e", "edit-text")
+config.bind(getattr(var, "leader") + "E", "cmd-edit")
+config.bind(getattr(var, "leader") + "i", "hint inputs")
+config.bind(getattr(var, "leader") + "h", "history")
+config.bind(getattr(var, "leader") + "H", "help")
+config.bind(getattr(var, "leader") + "m", "bookmark-list")
+config.bind(getattr(var, "leader") + "M", "bookmark-add")
+config.bind(getattr(var, "leader") + "n", "tab-clone")
+config.bind(getattr(var, "leader") + "N", "tab-clone -w")
+config.bind(getattr(var, "leader") + "o", "hint links window")
+config.bind(getattr(var, "leader") + "O", "hint links run :open -p {hint-url}")
+config.bind(getattr(var, "leader") + "p", "tab-pin")
+config.bind(getattr(var, "leader") + "P", "cmd-set-text -s :tab-move")
+config.bind(getattr(var, "leader") + "q", "tab-close")
+config.bind(getattr(var, "leader") + "Q", "close")
+config.bind(getattr(var, "leader") + "r", "config-source")
+config.bind(getattr(var, "leader") + "R", "restart")
+config.bind(
+    getattr(var, "leader") + "s",
+    "screenshot "
+    + getattr(var, "ss_dir")
+    + "qute-"
+    + getattr(var, "timestamp")
+    + ".png",
+)
+config.bind(getattr(var, "leader") + "S", "view-source --edit")
+config.bind(getattr(var, "leader") + "t", "cmd-set-text -s :tab-select")
+config.bind(getattr(var, "leader") + "T", "tab-only")
+config.bind(getattr(var, "leader") + "u", "undo")
+config.bind(getattr(var, "leader") + "v", "hint links spawn mpv {hint-url}")
+config.bind(
+    getattr(var, "leader") + "V",
+    "hint links spawn " + getattr(var, "terminal") + "-e yt-dlp {hint-url}",
+)
+config.bind(getattr(var, "leader") + "w", "cmd-set-text -s :tab-take")
+config.bind(getattr(var, "leader") + "W", "tab-give")
+config.bind(getattr(var, "leader") + "y", "hint links yank")
+config.bind(getattr(var, "leader") + "x", "quit --save")
+config.bind(getattr(var, "leader") + "X", "window-only")
 
 config.bind("p", "tab-pin")
 config.bind(";w", "hint link spawn --detach mpv --force-window yes {hint-url}")
 config.bind(";W", "spawn --detach mpv --force-window yes {url}")
 config.bind(
     ";I",
-    "hint images spawn --output-message wget -P " + dl_dir + "images/ -c {hint-url}",
+    "hint images spawn --output-message wget -P "
+    + getattr(var, "dl_dir")
+    + "images/ -c {hint-url}",
 )
 
 # Password management
