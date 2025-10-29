@@ -1,0 +1,308 @@
+#!/usr/bin/env bash
+# qute-rbw: qutebrowser userscript integrating rbw (Bitwarden) with fuzzel/dmenu/rofi/fzf
+# - Select an entry via a picker
+# - Choose to copy password, username, or TOTP to clipboard
+#
+# Requirements: rbw; one of fuzzel (preferred), rofi, dmenu, or fzf; and wl-copy/xclip/xsel for clipboard
+
+set -euo pipefail
+
+# Optional arguments to skip action prompt
+action_arg=""
+case "${1:-}" in
+  --password|--password-only|password)
+    action_arg="password" ;;
+  --username|--username-only|username)
+    action_arg="username" ;;
+  --totp|--otp|--totp-only|totp|otp)
+    action_arg="totp" ;;
+  --autofill|--fill|autofill|fill)
+    action_arg="autofill" ;;
+  *) ;;
+esac
+
+# No locking or watchdog; keep script simple per user request
+
+# Timing tunables (seconds)
+WAIT_AFTER_SELECTION=0.20
+WAIT_AFTER_USERNAME_PASTE=0.15
+# rbw get timeout (seconds) for password copy
+RBW_GET_TIMEOUT="${RBW_GET_TIMEOUT:-5}"
+
+fifo_msg() {
+  # Send a message to qutebrowser if QUTE_FIFO is set
+  if [[ -n "${QUTE_FIFO:-}" && -p "$QUTE_FIFO" ]]; then
+    printf '%s\n' "$1" >"$QUTE_FIFO" || true
+  fi
+}
+
+notify() {
+  # Show a message in qutebrowser, quoting the text
+  local msg="$1"
+  fifo_msg "message-info \"$msg\""
+}
+
+# Focus an input field via jseval without exposing secrets
+# Usage: focus_field username|password
+focus_field() {
+  local kind="${1:-}"
+  local js
+  if [[ "$kind" == "username" ]]; then
+    js="(()=>{function V(e){const s=getComputedStyle(e);if(s.visibility==='hidden'||s.display==='none'||e.disabled)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0;}const sels=['#login_field','input[name=\\\"login\\\"]','.js-login-field','input[autocomplete=\\\"username\\\"]','input[autocomplete=\\\"email\\\"]','input[type=\\\"email\\\"]','input[name*=\\\"user\\\" i]','input[id*=\\\"user\\\" i]','input[name*=\\\"login\\\" i]','input[id*=\\\"login\\\" i]','input[name*=\\\"email\\\" i]','input[id*=\\\"email\\\" i]','input[type=\\\"text\\\"]'];for(const sel of sels){for(const el of document.querySelectorAll(sel)){if(V(el)){try{el.scrollIntoView({block:'center'});}catch(e){};el.focus();try{el.click();}catch(e){};try{el.selectionStart=0;el.selectionEnd=el.value.length;}catch(e){};return true;}}}return false;})()"
+  else
+    js="(()=>{function V(e){const s=getComputedStyle(e);if(s.visibility==='hidden'||s.display==='none'||e.disabled)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0;}const sels=['#password','input[name=\\\"password\\\"]','.js-password-field','input[type=\\\"password\\\"]'];for(const sel of sels){for(const el of document.querySelectorAll(sel)){if(V(el)){try{el.scrollIntoView({block:'center'});}catch(e){};el.focus();try{el.click();}catch(e){};try{el.selectionStart=0;el.selectionEnd=el.value.length;}catch(e){};return true;}}}return false;})()"
+  fi
+  fifo_msg "jseval --quiet \"$js\""
+}
+
+do_paste() {
+  fifo_msg "mode-enter insert"
+  sleep 0.12
+  fifo_msg "fake-key <Ctrl-v>"
+}
+
+do_fake_paste() {
+  fifo_msg "mode-enter insert"
+  sleep 0.05
+  fifo_msg "fake-key <Shift-Insert>"
+}
+
+clear_field() {
+  fifo_msg "mode-enter insert"
+  sleep 0.04
+  fifo_msg "fake-key <Ctrl-a>"
+  sleep 0.04
+  fifo_msg "fake-key <Backspace>"
+}
+
+copy_clipboard() {
+  if command -v wl-copy >/dev/null 2>&1; then
+    wl-copy
+  elif command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard
+  elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --input
+  else
+    # Last resort: try rbw's clipboard with dummy read
+    cat >/dev/null
+  fi
+}
+
+# Read current clipboard contents to stdout (best-effort)
+clipboard_get() {
+  if command -v wl-paste >/dev/null 2>&1; then
+    wl-paste -n 2>/dev/null || true
+  elif command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard -o 2>/dev/null || true
+  elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --output 2>/dev/null || true
+  else
+    return 1
+  fi
+}
+
+# Set clipboard to given string, then wait briefly until it sticks
+clipboard_set_wait() {
+  local data="$1"
+  printf '%s' "$data" | copy_clipboard
+  # wait up to ~400ms for clipboard providers to update
+  local tries=8
+  while (( tries-- > 0 )); do
+    sleep 0.05
+    local cur
+    cur=$(clipboard_get || true)
+    if [[ "$cur" == "$data" ]]; then
+      return 0
+    fi
+  done
+  return 0
+}
+
+menu() {
+  # Usage: printf 'opt1\nopt2\n' | menu "Prompt"
+  local prompt="${1:-Select}"
+  if command -v fuzzel >/dev/null 2>&1; then
+    fuzzel --dmenu -p "$prompt: "
+  elif command -v rofi >/dev/null 2>&1; then
+    rofi -dmenu -p "$prompt"
+  elif command -v dmenu >/dev/null 2>&1; then
+    dmenu -p "$prompt"
+  elif command -v fzf >/dev/null 2>&1; then
+    FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:-} --prompt '$prompt> '" fzf
+  else
+    echo "No picker found (need fuzzel/rofi/dmenu/fzf)" >&2
+    exit 1
+  fi
+}
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { echo "Missing dependency: $1" >&2; exit 1; }
+}
+
+need_cmd rbw
+
+need_cmd sed
+
+# Ensure rbw is unlocked; avoid blocking pinentry in userscript
+if ! rbw unlocked >/dev/null 2>&1; then
+  notify "rbw locked – run 'rbw unlock' first"
+  exit 1
+fi
+
+# Attempt to auto-filter based on current page URL/host
+url="${QUTE_URL:-}"
+host=""
+if [[ -n "$url" ]]; then
+  host=$(printf '%s' "$url" | sed -E 's#^[a-zA-Z]+://([^/]+)/?.*$#\1#') || host=""
+fi
+
+list_out=""
+selection=""
+name=""
+user=""
+id=""
+
+# Prefer URL-based matches, then host-based matches; fall back to full list
+if [[ -n "$url" ]]; then
+  if search_out=$(rbw search --fields name,user,id -- "$url" 2>/dev/null); then
+    if [[ -n "$search_out" ]]; then
+      list_out="$search_out"
+    fi
+  fi
+fi
+if [[ -z "$list_out" && -n "$host" ]]; then
+  if search_out=$(rbw search --fields name,user,id -- "$host" 2>/dev/null); then
+    if [[ -n "$search_out" ]]; then
+      list_out="$search_out"
+    fi
+  fi
+fi
+
+# If still empty, list all entries
+if [[ -z "$list_out" ]]; then
+  if ! list_out=$(rbw list --fields name,user,id 2>/dev/null); then
+    echo "Failed to list entries. Try 'rbw login' and 'rbw sync'." >&2
+    exit 1
+  fi
+fi
+
+if [[ -z "$list_out" ]]; then
+  echo "No entries found." >&2
+  exit 1
+fi
+
+# Count matches; if exactly one, select automatically
+matches_count=$(printf '%s\n' "$list_out" | sed -n '$=')
+if [[ "$matches_count" -eq 1 ]]; then
+  selection="$list_out"
+else
+  selection=$(printf '%s\n' "$list_out" | menu "Choose account (name | user)") || exit 0
+fi
+
+# Expecting: name\tuser\tid
+name=${selection%%$'\t'*}
+rest=${selection#*$'\t'}
+user=${rest%%$'\t'*}
+id=${selection##*$'\t'}
+
+# Selection details (no debug spam)
+
+if [[ -z "${id:-}" || "$id" = "$selection" ]]; then
+  echo "Could not parse selection ID." >&2
+  exit 1
+fi
+
+if [[ -n "$action_arg" ]]; then
+  action="$action_arg"
+else
+  action=$(printf '%s\n' autofill password username totp | menu "Copy field") || exit 0
+fi
+
+
+
+case "$action" in
+  autofill)
+    # Prefetch password early to avoid delay after Tab
+    if command -v timeout >/dev/null 2>&1; then
+      pass_plain=$(timeout "${RBW_GET_TIMEOUT}"s rbw get "$id" 2>/dev/null || true)
+    else
+      pass_plain=$(rbw get "$id" 2>/dev/null || true)
+    fi
+    # Small settle after leaving picker or matching
+    sleep "$WAIT_AFTER_SELECTION"
+    # Site-specific direct JS fill removed due to quoting issues; falling back to paste method
+    # Fill username then password using clipboard + paste
+    # Username
+    # If username isn't known, try to fetch it
+    if [[ -z "${user:-}" ]]; then
+      user=$(rbw get --field user "$id" 2>/dev/null || true)
+    fi
+    if [[ -n "${user:-}" ]]; then
+      clipboard_set_wait "$user"
+      # Respect current cursor position (user focused username field manually)
+      do_paste
+      notify "autofill username"
+      sleep "$WAIT_AFTER_USERNAME_PASTE"
+    else
+      :
+    fi
+    # Copy password to clipboard only (no auto-paste)
+    if [[ -z "${pass_plain:-}" ]]; then
+      echo "Failed to get password for autofill." >&2
+      exit 1
+    fi
+    clipboard_set_wait "$pass_plain"
+    notify "password copied"
+    exit 0
+    ;;
+  password)
+    if rbw get --clipboard "$id" >/dev/null 2>&1; then
+      notify "Copied password for '$name'"
+      exit 0
+    else
+      # Fallback without clipboard flag
+      if pass=$(rbw get "$id" 2>/dev/null); then
+        printf '%s' "$pass" | copy_clipboard
+        notify "Copied password for '$name'"
+        exit 0
+      fi
+    fi
+    echo "Failed to get password." >&2
+    exit 1
+    ;;
+  username)
+    # If the user field is empty, try to fetch via rbw get --field user
+    if [[ -z "${user:-}" ]]; then
+      if user=$(rbw get --field user "$id" 2>/dev/null); then
+        :
+      fi
+    fi
+    if [[ -n "${user:-}" ]]; then
+      printf '%s' "$user" | copy_clipboard
+      notify "Copied username for '$name'"
+      exit 0
+    else
+      echo "No username available." >&2
+      exit 1
+    fi
+    ;;
+  totp)
+    if rbw code --clipboard "$id" >/dev/null 2>&1; then
+      notify "Copied TOTP for '$name'"
+      exit 0
+    else
+      # Fallback: print to stdout and copy
+      if code=$(rbw code "$id" 2>/dev/null); then
+        printf '%s' "$code" | copy_clipboard
+        notify "Copied TOTP for '$name'"
+        exit 0
+      fi
+    fi
+    echo "Failed to get TOTP (ensure TOTP is configured)." >&2
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+
+esac
