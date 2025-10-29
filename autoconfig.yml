@@ -36,7 +36,6 @@ settings:
     https://calendar.google.com?cid=%25s: true
     https://mail.google.com?extsrc=mailto&url=%25s: true
   content.site_specific_quirks.skip:
-    global:
-    - ua-slack
+    global: []
   tabs.show:
     global: switching

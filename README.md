@@ -39,6 +39,30 @@ Instruction configuration:
 -   Adblock Brave
 -   Youtube Adblock
 
+## Extras
+
+### Adblock (Brave engine)
+
+Install the adblock dependency and update lists:
+
+```bash
+# Arch Linux
+sudo pacman -S python-adblock
+
+# In qutebrowser (command mode)
+:adblock-update
+```
+
+### Spellcheck dictionary (en-US)
+
+Install the English (US) dictionary:
+
+```bash
+/usr/share/qutebrowser/scripts/dictcli.py install en-US
+```
+
+Then restart qutebrowser (e.g., `:restart`).
+
 ## To Do
 
 -   Update cutsom config
