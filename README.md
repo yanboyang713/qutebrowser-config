@@ -28,6 +28,7 @@ Instruction configuration:
 
 -   cd to Qutebrowser project
 -   Setup environment: `make ini` and update or using default value on `.env`
+-   Copy env example: `cp ~/.config/qutebrowser/.env.example ~/.config/qutebrowser/.env`
 -   Reload config: `<space> + r`
 -   Reload window: `<space> + R`
 -   If config not reload properly, please restart Qutebrowser `(close and open)` app
