@@ -34,10 +34,39 @@ c.tabs.background = True
 # User agent
 config.set(
     "content.headers.user_agent",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.3 Firefox/121",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     "*",
 )
 
+
+# Google sign-in compatibility: allow cookies, disable adblock
+config.set("content.cookies.accept", "all", "https://accounts.google.com/*")
+config.set("content.cookies.accept", "all", "https://*.google.com/*")
+config.set("content.blocking.enabled", False, "https://accounts.google.com/*")
+config.set("content.blocking.enabled", False, "https://*.google.com/*")
+
+# GitHub sign-in compatibility: allow cookies, disable adblock
+config.set("content.cookies.accept", "all", "https://github.com/*")
+config.set("content.cookies.accept", "all", "https://*.github.com/*")
+config.set("content.blocking.enabled", False, "https://github.com/*")
+config.set("content.blocking.enabled", False, "https://*.github.com/*")
+config.set(
+    "content.headers.accept_language",
+    "en-US,en;q=0.9",
+    "https://github.com/*",
+)
+config.set(
+    "content.headers.accept_language",
+    "en-US,en;q=0.9",
+    "https://*.github.com/*",
+)
+
+config.set("content.canvas_reading", True, "https://accounts.google.com/*")
+config.set("content.canvas_reading", True, "https://*.google.com/*")
+config.set("content.webgl", True, "https://accounts.google.com/*")
+config.set("content.webgl", True, "https://*.google.com/*")
+config.set("content.headers.accept_language", "en-US,en;q=0.9", "https://accounts.google.com/*")
+config.set("content.headers.accept_language", "en-US,en;q=0.9", "https://*.google.com/*")
 # Dark mode
 config.set("colors.webpage.darkmode.enabled", getattr(var, "darkmode"))
 config.set("colors.webpage.preferred_color_scheme", "auto")
@@ -192,7 +221,8 @@ config.bind(
 )
 
 # Password management
-config.bind("ee", "spawn --userscript qute-pass")
-config.bind("eu", "spawn --userscript qute-pass --username-only")
-config.bind("ep", "spawn --userscript qute-pass --password-only")
-config.bind("eo", "spawn --userscript qute-pass --otp-only")
+config.bind("ea", "spawn --userscript qute-rbw --autofill")
+#config.bind("ee", "spawn --userscript qute-rbw")
+config.bind("eu", "spawn --userscript qute-rbw --username")
+config.bind("ep", "spawn --userscript qute-rbw --password")
+config.bind("eo", "spawn --userscript qute-rbw --totp")
