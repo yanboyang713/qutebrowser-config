@@ -64,48 +64,45 @@ Install the English (US) dictionary:
 
 Then restart qutebrowser (e.g., `:restart`).
 
-### Password manager (rbw + qute-rbw)
+For Bitwarden integration (rbw), see the "Userscripts: qute-rbw (Bitwarden)" section below.
 
-Install and set up Bitwarden via `rbw` with a qutebrowser userscript.
+## Authenticator App (TOTP)
 
-1) Install rbw (example for Arch Linux):
+Use an authenticator app (TOTP) with Bitwarden and rbw.
 
-```bash
-sudo pacman -S rbw fuzzel
-rbw config set email your@email
-rbw login
-rbw unlock
-rbw list  # should show your vault entries
-```
+- Enable in Bitwarden Web Vault: Settings → Security → Two-step Login → Authenticator App (TOTP).
+- Ensure rbw is configured for the US cloud:
+  - `rbw config set base_url https://vault.bitwarden.com`
+  - `rbw config set email <your-email>`
+- Log in with TOTP:
+  - `rbw login` (enter master password via pinentry when prompted)
+  - When asked for 2FA, enter the 6‑digit TOTP from your authenticator.
+- Retrieve TOTP codes stored in your vault items (Bitwarden Premium):
+  - `rbw get --totp "<item name>"`
+  - Example copy to clipboard (Linux): `rbw get --totp "GitHub" | xclip -selection clipboard`
+- Common issues:
+  - HTTP 400 on login: verify server URL, email, and update rbw (`rbw --version`).
+  - SSO or non‑TOTP 2FA isn’t supported by rbw; use TOTP or email 2FA.
+  - Config file: `~/.config/rbw/config.json`.
 
-2) Install qute-rbw userscript to the default userscripts directory:
+## Userscripts: qute-rbw (Bitwarden)
 
-```bash
-mkdir -p ~/.local/share/qutebrowser/userscripts
-# Place the qute-rbw script you downloaded into this folder, e.g.:
-cp /path/to/qute-rbw ~/.local/share/qutebrowser/userscripts/qute-rbw
-chmod +x ~/.local/share/qutebrowser/userscripts/qute-rbw
-```
+Use the qute-rbw userscript to fill usernames and copy passwords from Bitwarden (rbw) in qutebrowser — no download needed if the userscript already exists on your system.
 
-3) Bind keys in qutebrowser (add to your `~/.config/qutebrowser/config.py`), then `:config-source`:
-
-```python
-# rbw + qute-rbw userscripts
-config.bind("ee", "spawn --userscript qute-rbw")
-config.bind("eu", "spawn --userscript qute-rbw --username")
-config.bind("ep", "spawn --userscript qute-rbw --password")
-config.bind("eo", "spawn --userscript qute-rbw --totp")
-# If needed, explicitly set your launcher (you use fuzzel):
-# config.bind("ee", "spawn --userscript qute-rbw --menu fuzzel")
-```
-
-Usage: On a login page, focus a field and press `ee` to pick an entry, or `eu` / `ep` / `eo` for username / password / TOTP specifically.
-
-## To Do
-
--   Update cutsom config
--   Update Youtube adblock
--   Update themes
+- Link userscripts directory (so qutebrowser finds your scripts):
+  - `mkdir -p ~/.config/qutebrowser/userscripts`
+  - `ln -s ~/.config/qutebrowser/userscripts ~/.local/share/qutebrowser/userscripts`
+- Keybindings (add in `~/.config/qutebrowser/config.py`):
+  - Run userscript: `config.bind(",bw", "spawn --userscript qute-rbw")`
+  - Autofill username + copy password: `config.bind("ea", "spawn --userscript qute-rbw --autofill")`
+- Usage flow:
+  - Click the username field on the page.
+  - Press `ea` (or run `:spawn --userscript qute-rbw --autofill`).
+  - The userscript pastes the username and copies the password to the clipboard for you to paste.
+- Requirements:
+  - `rbw` installed and unlocked (`rbw login`, then `rbw unlock`)
+  - A picker: `fuzzel` (recommended) or `rofi` / `dmenu` / `fzf`
+  - Clipboard tool: Wayland `wl-clipboard` (wl-copy/wl-paste) or X11 `xclip`/`xsel`
 
 ## References
 
