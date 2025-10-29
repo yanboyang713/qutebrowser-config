@@ -64,6 +64,43 @@ Install the English (US) dictionary:
 
 Then restart qutebrowser (e.g., `:restart`).
 
+### Password manager (rbw + qute-rbw)
+
+Install and set up Bitwarden via `rbw` with a qutebrowser userscript.
+
+1) Install rbw (example for Arch Linux):
+
+```bash
+sudo pacman -S rbw fuzzel
+rbw config set email your@email
+rbw login
+rbw unlock
+rbw list  # should show your vault entries
+```
+
+2) Install qute-rbw userscript to the default userscripts directory:
+
+```bash
+mkdir -p ~/.local/share/qutebrowser/userscripts
+# Place the qute-rbw script you downloaded into this folder, e.g.:
+cp /path/to/qute-rbw ~/.local/share/qutebrowser/userscripts/qute-rbw
+chmod +x ~/.local/share/qutebrowser/userscripts/qute-rbw
+```
+
+3) Bind keys in qutebrowser (add to your `~/.config/qutebrowser/config.py`), then `:config-source`:
+
+```python
+# rbw + qute-rbw userscripts
+config.bind("ee", "spawn --userscript qute-rbw")
+config.bind("eu", "spawn --userscript qute-rbw --username")
+config.bind("ep", "spawn --userscript qute-rbw --password")
+config.bind("eo", "spawn --userscript qute-rbw --totp")
+# If needed, explicitly set your launcher (you use fuzzel):
+# config.bind("ee", "spawn --userscript qute-rbw --menu fuzzel")
+```
+
+Usage: On a login page, focus a field and press `ee` to pick an entry, or `eu` / `ep` / `eo` for username / password / TOTP specifically.
+
 ## To Do
 
 -   Update cutsom config
