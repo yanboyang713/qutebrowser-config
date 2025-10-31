@@ -211,8 +211,8 @@ config.bind(getattr(var, "leader") + "x", "quit --save")
 config.bind(getattr(var, "leader") + "X", "window-only")
 
 config.bind("p", "tab-pin")
-config.bind(";w", "hint link spawn --detach mpv --force-window yes {hint-url}")
-config.bind(";W", "spawn --detach mpv --force-window yes {url}")
+config.bind(";w", "hint link spawn --detach mpv --force-window=yes {hint-url}")
+config.bind(";W", "spawn --detach mpv --force-window=yes {url}")
 config.bind(
     ";I",
     "hint images spawn --output-message wget -P "

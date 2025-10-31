@@ -65,6 +65,65 @@ Install the English (US) dictionary:
 Then restart qutebrowser (e.g., `:restart`).
 
 For Bitwarden integration (rbw), see the "Userscripts: qute-rbw (Bitwarden)" section below.
+ 
+### Play YouTube in mpv (yt-dlp)
+ 
+Install tools
+ 
+```bash
+# Arch Linux
+sudo pacman -S mpv yt-dlp
+# or with paru
+paru -S mpv yt-dlp
+ 
+# Debian/Ubuntu
+sudo apt install mpv yt-dlp
+ 
+# Fedora
+sudo dnf install mpv yt-dlp
+```
+ 
+Configure mpv to use yt-dlp
+ 
+Create or edit `~/.config/mpv/mpv.conf` and add:
+ 
+```conf
+# Keep the window open after playback
+keep-open=yes
+ 
+# Enable youtube-dl/yt-dlp hook
+ytdl=yes
+ 
+# Force mpv to use yt-dlp and avoid user yt-dlp config interference
+script-opts=ytdl_hook-ytdl_path=/usr/bin/yt-dlp
+ytdl-raw-options=ignore-config=,extractor-args=youtube:player_client=android
+ 
+# Open a window immediately when launching from other apps
+force-window=yes
+```
+ 
+Notes
+- Valid `player_client` values include `android`, `web`, `ios` (and more). `android` is often the most reliable without cookies. If a video fails to load, try switching to `web` or `ios`:
+  - `ytdl-raw-options=ignore-config=,extractor-args=youtube:player_client=web`
+  - `ytdl-raw-options=ignore-config=,extractor-args=youtube:player_client=ios`
+- To control mpv via MPRIS (e.g., `playerctl`), install the optional plugin: `mpv-mpris` (package name may vary by distro).
+ 
+Use from qutebrowser
+ 
+- Current page in mpv: press `;W`.
+- Hint a link to mpv: press `;w` and type the hint.
+- Hint with your leader key (`<space>` by default): `<space>v` shows hints and opens the chosen link in mpv.
+ 
+Troubleshooting
+ 
+- Update yt-dlp if extraction fails:
+  - `paru -Syu yt-dlp` (Arch) or `yt-dlp -U` (pip install)
+- Test yt-dlp directly:
+  - `yt-dlp -J 'https://www.youtube.com/watch?v=VIDEO_ID'`
+- Test mpv directly:
+  - `mpv -v 'https://www.youtube.com/watch?v=VIDEO_ID'`
+- Ensure qutebrowser bindings use `--force-window=yes` (with `=`). Without `=`, mpv may try to open a file named `yes`.
+- If you need cookies (age/region), consider exporting cookies to a Netscape file and adding: `ytdl-raw-options=ignore-config=,cookies=/path/to/cookies.txt`.
 
 ## Authenticator App (TOTP)
 
